@@ -1,13 +1,13 @@
 // Function to generate a random ID
 function generateId() {
-    return Math.random().toString(36).substring(2, 15);
+    return Math.random().toString(36).substr(2, 9);
 }
 
-// Function to save a note
-function saveNote() {
+// Function to share a note
+function shareNote() {
     const noteContent = document.getElementById('noteContent').value;
     if (!noteContent.trim()) {
-        alert('Please enter some text for your note');
+        alert('Please enter some text before sharing');
         return;
     }
 
@@ -20,12 +20,10 @@ function saveNote() {
     // Generate the shareable link
     const shareLink = `${window.location.origin}${window.location.pathname}?note=${noteId}`;
     
-    // Display the link
+    // Show the share view and hide the editor
+    document.getElementById('editorView').style.display = 'none';
+    document.getElementById('shareView').style.display = 'block';
     document.getElementById('shareLink').value = shareLink;
-    document.getElementById('noteLink').style.display = 'block';
-    
-    // Clear the textarea
-    document.getElementById('noteContent').value = '';
 }
 
 // Function to copy the link to clipboard
@@ -33,7 +31,22 @@ function copyLink() {
     const shareLink = document.getElementById('shareLink');
     shareLink.select();
     document.execCommand('copy');
-    alert('Link copied to clipboard!');
+    
+    // Change button text temporarily
+    const copyBtn = document.querySelector('.copy-btn');
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = 'Copied!';
+    setTimeout(() => {
+        copyBtn.textContent = originalText;
+    }, 2000);
+}
+
+// Function to create a new note
+function createNewNote() {
+    document.getElementById('noteContent').value = '';
+    document.getElementById('editorView').style.display = 'block';
+    document.getElementById('shareView').style.display = 'none';
+    document.getElementById('viewNote').style.display = 'none';
 }
 
 // Function to check for note ID in URL and display note if present
@@ -46,10 +59,11 @@ function checkForNoteInUrl() {
         if (noteContent) {
             document.getElementById('noteDisplay').textContent = noteContent;
             document.getElementById('viewNote').style.display = 'block';
-            document.querySelector('.note-form').style.display = 'none';
+            document.getElementById('editorView').style.display = 'none';
         } else {
-            document.getElementById('noteDisplay').textContent = 'Note not found';
+            document.getElementById('noteDisplay').textContent = 'Note not found or has expired';
             document.getElementById('viewNote').style.display = 'block';
+            document.getElementById('editorView').style.display = 'none';
         }
     }
 }
