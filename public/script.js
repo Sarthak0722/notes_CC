@@ -112,6 +112,12 @@ async function shareNote() {
         return;
     }
 
+    // Get and disable the share button
+    const shareButton = document.querySelector('.primary-btn');
+    const originalText = shareButton.textContent;
+    shareButton.classList.add('loading');
+    shareButton.disabled = true;
+
     try {
         const response = await fetch('/api/notes', {
             method: 'POST',
@@ -145,6 +151,11 @@ async function shareNote() {
     } catch (error) {
         console.error('Error sharing note:', error);
         alert('Failed to share note. Please try again.');
+    } finally {
+        // Restore the share button
+        shareButton.classList.remove('loading');
+        shareButton.disabled = false;
+        shareButton.textContent = originalText;
     }
 }
 
