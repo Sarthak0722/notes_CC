@@ -53,37 +53,23 @@ async function getNote(gistId) {
 }
 
 // Function to share a note
-async function shareNote() {
+function shareNote() {
     const noteContent = document.getElementById('noteContent').value;
     if (!noteContent.trim()) {
         alert('Please enter some text before sharing');
         return;
     }
 
-    // Show loading state
-    const shareButton = document.querySelector('.primary-btn');
-    const originalText = shareButton.textContent;
-    shareButton.textContent = 'Saving...';
-    shareButton.disabled = true;
-
-    // Save the note and get Gist ID
-    const gistId = await saveNote(generateId(), noteContent);
+    // Encode the note content
+    const encodedNote = btoa(encodeURIComponent(noteContent));
     
-    if (gistId) {
-        // Generate the shareable link
-        const shareLink = `${window.location.origin}${window.location.pathname}?note=${gistId}`;
-        
-        // Show the share view and hide the editor
-        document.getElementById('editorView').style.display = 'none';
-        document.getElementById('shareView').style.display = 'block';
-        document.getElementById('shareLink').value = shareLink;
-    } else {
-        alert('Failed to save note. Please try again.');
-    }
-
-    // Reset button state
-    shareButton.textContent = originalText;
-    shareButton.disabled = false;
+    // Generate the shareable link
+    const shareLink = `${window.location.origin}${window.location.pathname}?note=${encodedNote}`;
+    
+    // Show the share view and hide the editor
+    document.getElementById('editorView').style.display = 'none';
+    document.getElementById('shareView').style.display = 'block';
+    document.getElementById('shareLink').value = shareLink;
 }
 
 // Function to copy the link to clipboard
@@ -109,22 +95,23 @@ function createNewNote() {
     document.getElementById('viewNote').style.display = 'none';
 }
 
-// Function to check for note ID in URL and display note if present
-async function checkForNoteInUrl() {
+// Function to check for note in URL and display note if present
+function checkForNoteInUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    const noteId = urlParams.get('note');
+    const encodedNote = urlParams.get('note');
     
-    if (noteId) {
-        // Show loading state
-        document.getElementById('noteDisplay').textContent = 'Loading note...';
-        document.getElementById('viewNote').style.display = 'block';
-        document.getElementById('editorView').style.display = 'none';
-
-        const noteContent = await getNote(noteId);
-        if (noteContent) {
+    if (encodedNote) {
+        try {
+            // Decode the note content
+            const noteContent = decodeURIComponent(atob(encodedNote));
+            
             document.getElementById('noteDisplay').textContent = noteContent;
-        } else {
-            document.getElementById('noteDisplay').textContent = 'Note not found or has expired';
+            document.getElementById('viewNote').style.display = 'block';
+            document.getElementById('editorView').style.display = 'none';
+        } catch (error) {
+            document.getElementById('noteDisplay').textContent = 'Invalid note link';
+            document.getElementById('viewNote').style.display = 'block';
+            document.getElementById('editorView').style.display = 'none';
         }
     }
 }
