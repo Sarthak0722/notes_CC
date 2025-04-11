@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notes Sharing Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Notes Sharing Tool</h1>
+        <div class="note-form">
+            <h2>Create a New Note</h2>
+            <textarea id="noteContent" placeholder="Enter your note here..."></textarea>
+            <button onclick="saveNote()">Save Note</button>
+        </div>
+        <div id="noteLink" class="note-link" style="display: none;">
+            <h2>Your Note Link</h2>
+            <p>Share this link with others:</p>
+            <input type="text" id="shareLink" readonly>
+            <button onclick="copyLink()">Copy Link</button>
+        </div>
+        <div id="viewNote" class="view-note" style="display: none;">
+            <h2>View Note</h2>
+            <div id="noteDisplay"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
