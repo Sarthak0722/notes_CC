@@ -52,153 +52,124 @@ async function getNote(gistId) {
     }
 }
 
-// Function to format time remaining
-function formatTimeRemaining(expiryDate) {
-    const now = new Date();
-    const expiry = new Date(expiryDate);
-    const diff = expiry - now;
-    
-    if (diff <= 0) {
-        return 'Expired';
+// Utility function to format time remaining
+function formatTimeRemaining(expiryTime) {
+    const now = new Date().getTime();
+    const expiry = new Date(expiryTime).getTime();
+    const timeLeft = expiry - now;
+
+    if (timeLeft <= 0) {
+        return "Expired";
     }
 
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 60) {
-        return `Expires in ${minutes} minute${minutes !== 1 ? 's' : ''}`;
-    }
-    
-    return `Expires in 1 hour`;
+    const minutes = Math.floor(timeLeft / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    return `${minutes}m ${seconds}s`;
 }
 
-// Function to update expiry time display
-function updateExpiryTime(elementId, expiryDate) {
-    const element = document.getElementById(elementId);
-    if (element && expiryDate) {
-        const updateTimer = () => {
-            element.textContent = formatTimeRemaining(expiryDate);
-            if (new Date() < new Date(expiryDate)) {
-                setTimeout(updateTimer, 60000); // Update every minute
-            }
-        };
-        updateTimer();
-    }
+// Update expiry time display
+function updateExpiryTime(expiryTime) {
+    const expiryElement = document.getElementById('expiryTime');
+    if (!expiryElement) return;
+
+    const updateTimer = () => {
+        const timeRemaining = formatTimeRemaining(expiryTime);
+        expiryElement.textContent = `Time remaining: ${timeRemaining}`;
+
+        if (timeRemaining === "Expired") {
+            clearInterval(timerInterval);
+            document.getElementById('noteDisplay').textContent = "This note has expired.";
+        }
+    };
+
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
 }
 
-// Function to share a note
+// Share note function
 async function shareNote() {
-    const noteContent = document.getElementById('noteContent').value;
-    if (!noteContent.trim()) {
-        alert('Please enter some text before sharing');
+    const noteContent = document.getElementById('noteInput').value.trim();
+    if (!noteContent) {
+        alert('Please enter a note to share');
         return;
     }
 
     try {
-        // Show loading state
-        const shareButton = document.querySelector('.primary-btn');
-        const originalText = shareButton.textContent;
-        shareButton.textContent = 'Saving...';
-        shareButton.disabled = true;
-
-        // Save note to backend
         const response = await fetch('/api/notes', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ content: noteContent })
+            body: JSON.stringify({ content: noteContent }),
         });
 
         if (!response.ok) {
-            throw new Error('Failed to save note');
+            throw new Error('Failed to create note');
         }
 
         const data = await response.json();
-        
-        // Generate the shareable link
         const shareLink = `${window.location.origin}/note/${data.id}`;
         
-        // Show the share view and hide the editor
-        document.getElementById('editorView').style.display = 'none';
-        document.getElementById('shareView').style.display = 'block';
         document.getElementById('shareLink').value = shareLink;
-
-        // Update expiry time
-        updateExpiryTime('shareExpiry', data.expiresAt);
-
-        // Update URL without reloading
-        history.pushState({}, '', `/note/${data.id}`);
-
-        // Reset button state
-        shareButton.textContent = originalText;
-        shareButton.disabled = false;
+        document.getElementById('linkContainer').style.display = 'flex';
+        document.getElementById('expiryTime').textContent = `Time remaining: ${formatTimeRemaining(data.expiryTime)}`;
+        updateExpiryTime(data.expiryTime);
+        
     } catch (error) {
-        alert('Failed to save note. Please try again.');
-        const shareButton = document.querySelector('.primary-btn');
-        shareButton.textContent = 'Share Note';
-        shareButton.disabled = false;
+        console.error('Error sharing note:', error);
+        alert('Failed to share note. Please try again.');
     }
 }
 
-// Function to copy the link to clipboard
+// Copy link function
 function copyLink() {
-    const shareLink = document.getElementById('shareLink');
-    shareLink.select();
+    const linkInput = document.getElementById('shareLink');
+    linkInput.select();
     document.execCommand('copy');
-    
-    // Change button text temporarily
-    const copyBtn = document.querySelector('.copy-btn');
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = 'Copied!';
-    setTimeout(() => {
-        copyBtn.textContent = originalText;
-    }, 2000);
+    alert('Link copied to clipboard!');
 }
 
-// Function to create a new note
+// Create new note function
 function createNewNote() {
-    document.getElementById('noteContent').value = '';
-    document.getElementById('editorView').style.display = 'block';
-    document.getElementById('shareView').style.display = 'none';
-    document.getElementById('viewNote').style.display = 'none';
-    history.pushState({}, '', '/');
+    document.getElementById('createSection').style.display = 'block';
+    document.getElementById('viewSection').style.display = 'none';
+    document.getElementById('linkContainer').style.display = 'none';
+    document.getElementById('noteInput').value = '';
 }
 
-// Function to load and display a note
+// Load and display note
 async function loadNote(noteId) {
     try {
-        // Show loading state
-        document.getElementById('noteDisplay').textContent = 'Loading note...';
-        document.getElementById('viewNote').style.display = 'block';
-        document.getElementById('editorView').style.display = 'none';
-        document.getElementById('shareView').style.display = 'none';
-
         const response = await fetch(`/api/notes/${noteId}`);
         if (!response.ok) {
-            throw new Error('Note not found');
+            throw new Error('Note not found or expired');
         }
 
         const data = await response.json();
+        
+        document.getElementById('createSection').style.display = 'none';
+        document.getElementById('viewSection').style.display = 'block';
         document.getElementById('noteDisplay').textContent = data.content;
         
-        // Update expiry time
-        updateExpiryTime('viewExpiry', data.expiresAt);
+        if (data.expiryTime) {
+            updateExpiryTime(data.expiryTime);
+        }
     } catch (error) {
-        document.getElementById('noteDisplay').textContent = 'Note not found or has expired';
-        document.getElementById('viewExpiry').textContent = '';
+        console.error('Error loading note:', error);
+        document.getElementById('noteDisplay').textContent = 'Note not found or has expired.';
     }
 }
 
-// Check URL on page load
-window.onload = () => {
+// Initialize the page
+document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
-    const noteMatch = path.match(/^\/note\/([a-zA-Z0-9_-]+)$/);
-    
-    if (noteMatch) {
-        loadNote(noteMatch[1]);
+    const noteId = path.match(/\/note\/([^\/]+)/)?.[1];
+
+    if (noteId) {
+        loadNote(noteId);
     } else {
-        // Show editor view for the main page
-        document.getElementById('editorView').style.display = 'block';
-        document.getElementById('shareView').style.display = 'none';
-        document.getElementById('viewNote').style.display = 'none';
+        document.getElementById('createSection').style.display = 'block';
+        document.getElementById('viewSection').style.display = 'none';
     }
-}; 
+}); 
