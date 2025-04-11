@@ -121,6 +121,13 @@ textarea:focus {
     background-color: #2d8a46;
 }
 
+.expiry-text {
+    color: #e65100;
+    font-size: 14px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
 .info-text {
     color: #666;
     margin: 15px 0;

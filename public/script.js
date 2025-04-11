@@ -52,24 +52,88 @@ async function getNote(gistId) {
     }
 }
 
+// Function to format time remaining
+function formatTimeRemaining(expiryDate) {
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const diff = expiry - now;
+    
+    if (diff <= 0) {
+        return 'Expired';
+    }
+
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) {
+        return `Expires in ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+    
+    return `Expires in 1 hour`;
+}
+
+// Function to update expiry time display
+function updateExpiryTime(elementId, expiryDate) {
+    const element = document.getElementById(elementId);
+    if (element && expiryDate) {
+        const updateTimer = () => {
+            element.textContent = formatTimeRemaining(expiryDate);
+            if (new Date() < new Date(expiryDate)) {
+                setTimeout(updateTimer, 60000); // Update every minute
+            }
+        };
+        updateTimer();
+    }
+}
+
 // Function to share a note
-function shareNote() {
+async function shareNote() {
     const noteContent = document.getElementById('noteContent').value;
     if (!noteContent.trim()) {
         alert('Please enter some text before sharing');
         return;
     }
 
-    // Encode the note content
-    const encodedNote = btoa(encodeURIComponent(noteContent));
-    
-    // Generate the shareable link
-    const shareLink = `${window.location.origin}${window.location.pathname}?note=${encodedNote}`;
-    
-    // Show the share view and hide the editor
-    document.getElementById('editorView').style.display = 'none';
-    document.getElementById('shareView').style.display = 'block';
-    document.getElementById('shareLink').value = shareLink;
+    try {
+        // Show loading state
+        const shareButton = document.querySelector('.primary-btn');
+        const originalText = shareButton.textContent;
+        shareButton.textContent = 'Saving...';
+        shareButton.disabled = true;
+
+        // Save note to backend
+        const response = await fetch('/api/notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content: noteContent })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save note');
+        }
+
+        const data = await response.json();
+        
+        // Generate the shareable link
+        const shareLink = `${window.location.origin}/note/${data.id}`;
+        
+        // Show the share view and hide the editor
+        document.getElementById('editorView').style.display = 'none';
+        document.getElementById('shareView').style.display = 'block';
+        document.getElementById('shareLink').value = shareLink;
+
+        // Update expiry time
+        updateExpiryTime('shareExpiry', data.expiresAt);
+
+        // Reset button state
+        shareButton.textContent = originalText;
+        shareButton.disabled = false;
+    } catch (error) {
+        alert('Failed to save note. Please try again.');
+        const shareButton = document.querySelector('.primary-btn');
+        shareButton.textContent = 'Share Note';
+        shareButton.disabled = false;
+    }
 }
 
 // Function to copy the link to clipboard
@@ -93,28 +157,39 @@ function createNewNote() {
     document.getElementById('editorView').style.display = 'block';
     document.getElementById('shareView').style.display = 'none';
     document.getElementById('viewNote').style.display = 'none';
+    history.pushState({}, '', '/');
 }
 
-// Function to check for note in URL and display note if present
-function checkForNoteInUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const encodedNote = urlParams.get('note');
-    
-    if (encodedNote) {
-        try {
-            // Decode the note content
-            const noteContent = decodeURIComponent(atob(encodedNote));
-            
-            document.getElementById('noteDisplay').textContent = noteContent;
-            document.getElementById('viewNote').style.display = 'block';
-            document.getElementById('editorView').style.display = 'none';
-        } catch (error) {
-            document.getElementById('noteDisplay').textContent = 'Invalid note link';
-            document.getElementById('viewNote').style.display = 'block';
-            document.getElementById('editorView').style.display = 'none';
+// Function to load and display a note
+async function loadNote(noteId) {
+    try {
+        // Show loading state
+        document.getElementById('noteDisplay').textContent = 'Loading note...';
+        document.getElementById('viewNote').style.display = 'block';
+        document.getElementById('editorView').style.display = 'none';
+
+        const response = await fetch(`/api/notes/${noteId}`);
+        if (!response.ok) {
+            throw new Error('Note not found');
         }
+
+        const data = await response.json();
+        document.getElementById('noteDisplay').textContent = data.content;
+        
+        // Update expiry time
+        updateExpiryTime('viewExpiry', data.expiresAt);
+    } catch (error) {
+        document.getElementById('noteDisplay').textContent = 'Note not found or has expired';
+        document.getElementById('viewExpiry').textContent = '';
     }
 }
 
-// Check for note in URL when page loads
-window.onload = checkForNoteInUrl; 
+// Check URL on page load
+window.onload = () => {
+    const path = window.location.pathname;
+    const noteMatch = path.match(/^\/note\/([a-zA-Z0-9_-]+)$/);
+    
+    if (noteMatch) {
+        loadNote(noteMatch[1]);
+    }
+}; 

@@ -12,6 +12,7 @@
         <div class="editor-view" id="editorView">
             <h1>Share Your Note</h1>
             <textarea id="noteContent" placeholder="Type or paste your note here..."></textarea>
+            <p class="info-text">Note: Links will expire after 1 hour</p>
             <button onclick="shareNote()" class="primary-btn">Share Note</button>
         </div>
         
@@ -22,12 +23,14 @@
                 <button onclick="copyLink()" class="copy-btn">Copy Link</button>
             </div>
             <p class="info-text">Share this link with anyone to let them view your note</p>
+            <p class="expiry-text" id="shareExpiry"></p>
             <button onclick="createNewNote()" class="secondary-btn">Create New Note</button>
         </div>
 
         <div class="view-note" id="viewNote" style="display: none;">
             <h2>Shared Note</h2>
             <div id="noteDisplay"></div>
+            <p class="expiry-text" id="viewExpiry"></p>
             <button onclick="createNewNote()" class="secondary-btn">Create Your Own Note</button>
         </div>
     </div>

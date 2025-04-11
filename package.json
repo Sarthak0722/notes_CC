@@ -1,0 +1,14 @@
+{
+  "name": "notes-share",
+  "version": "1.0.0",
+  "description": "Simple notes sharing app",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.2.0",
+    "nanoid": "^3.3.7"
+  }
+} 
