@@ -1,23 +1,23 @@
-// JSONBin.io configuration
-const JSONBIN_API_KEY = '$2b$10$Nt/Iq5o.wAfiJaVw5qJXAOPn6/p9zHtAt8mBhzqJVJGkypQvHxcie'; // Read-access API key
-const BIN_ID = '65f0c9c8dc74654018a8ba7b';
-
 // Function to generate a random ID
 function generateId() {
     return Math.random().toString(36).substr(2, 9);
 }
 
-// Function to save note to JSONBin.io
+// Function to save note using GitHub Gists
 async function saveNote(noteId, content) {
     try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-            method: 'PUT',
+        const response = await fetch('https://api.github.com/gists', {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Access-Key': JSONBIN_API_KEY,
             },
             body: JSON.stringify({
-                [noteId]: content
+                public: true,
+                files: {
+                    'note.txt': {
+                        content: content
+                    }
+                }
             })
         });
         
@@ -25,21 +25,19 @@ async function saveNote(noteId, content) {
             console.error('Server response:', await response.text());
             return false;
         }
-        return true;
+        
+        const data = await response.json();
+        return data.id; // Return the Gist ID
     } catch (error) {
         console.error('Error saving note:', error);
         return false;
     }
 }
 
-// Function to get note from JSONBin.io
-async function getNote(noteId) {
+// Function to get note from GitHub Gists
+async function getNote(gistId) {
     try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: {
-                'X-Access-Key': JSONBIN_API_KEY
-            }
-        });
+        const response = await fetch(`https://api.github.com/gists/${gistId}`);
         
         if (!response.ok) {
             console.error('Server response:', await response.text());
@@ -47,7 +45,7 @@ async function getNote(noteId) {
         }
         
         const data = await response.json();
-        return data.record[noteId];
+        return data.files['note.txt'].content;
     } catch (error) {
         console.error('Error getting note:', error);
         return null;
@@ -68,15 +66,12 @@ async function shareNote() {
     shareButton.textContent = 'Saving...';
     shareButton.disabled = true;
 
-    // Generate a unique ID for the note
-    const noteId = generateId();
+    // Save the note and get Gist ID
+    const gistId = await saveNote(generateId(), noteContent);
     
-    // Save the note
-    const saved = await saveNote(noteId, noteContent);
-    
-    if (saved) {
+    if (gistId) {
         // Generate the shareable link
-        const shareLink = `${window.location.origin}${window.location.pathname}?note=${noteId}`;
+        const shareLink = `${window.location.origin}${window.location.pathname}?note=${gistId}`;
         
         // Show the share view and hide the editor
         document.getElementById('editorView').style.display = 'none';
