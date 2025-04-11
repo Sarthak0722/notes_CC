@@ -3,33 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes Share</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Share Your Note</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <div class="container">
+        <!-- Create Note Section -->
         <div id="createSection">
             <h1>Share Your Note</h1>
             <textarea id="noteInput" placeholder="Type or paste your note here..."></textarea>
             <p class="info-text">Note: Links will expire after 1 hour</p>
             <button onclick="shareNote()" class="primary-btn">Share Note</button>
             
+            <!-- Link Container (initially hidden) -->
             <div id="linkContainer" style="display: none;">
                 <h2>🎉 Your note has been shared!</h2>
-                <div class="link-container">
+                <div class="link-box">
                     <input type="text" id="shareLink" readonly>
                     <button onclick="copyLink()" class="copy-btn">Copy Link</button>
                 </div>
-                <p class="expiry-text" id="expiryTime"></p>
+                <p id="expiryTime" class="expiry-text"></p>
             </div>
         </div>
 
+        <!-- View Note Section -->
         <div id="viewSection" style="display: none;">
             <h2>Shared Note</h2>
-            <div id="noteDisplay"></div>
+            <div id="noteDisplay" class="note-display"></div>
+            <p id="viewExpiryTime" class="expiry-text"></p>
             <button onclick="createNewNote()" class="secondary-btn">Create Your Own Note</button>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script src="/script.js"></script>
 </body>
 </html> 

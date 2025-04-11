@@ -82,10 +82,10 @@ function formatTimeRemaining(expiryTime) {
 }
 
 // Update expiry time display
-function updateExpiryTime(expiryTime) {
+function updateExpiryTime(expiryTime, elementId = 'expiryTime') {
     if (!expiryTime) return;
     
-    const expiryElement = document.getElementById('expiryTime');
+    const expiryElement = document.getElementById(elementId);
     if (!expiryElement) return;
 
     const updateTimer = () => {
@@ -95,6 +95,7 @@ function updateExpiryTime(expiryTime) {
         if (timeRemaining === "Expired") {
             clearInterval(timerInterval);
             document.getElementById('noteDisplay').textContent = "This note has expired.";
+            document.getElementById('viewExpiryTime').textContent = "Note has expired";
         }
     };
 
@@ -161,11 +162,16 @@ function createNewNote() {
     document.getElementById('viewSection').style.display = 'none';
     document.getElementById('linkContainer').style.display = 'none';
     document.getElementById('noteInput').value = '';
+    history.pushState({}, '', '/');
 }
 
 // Load and display note
 async function loadNote(noteId) {
     try {
+        document.getElementById('createSection').style.display = 'none';
+        document.getElementById('viewSection').style.display = 'block';
+        document.getElementById('noteDisplay').textContent = 'Loading note...';
+
         const response = await fetch(`/api/notes/${noteId}`);
         if (!response.ok) {
             throw new Error('Note not found or expired');
@@ -173,12 +179,14 @@ async function loadNote(noteId) {
 
         const data = await response.json();
         
-        document.getElementById('createSection').style.display = 'none';
-        document.getElementById('viewSection').style.display = 'block';
+        if (!data || !data.content) {
+            throw new Error('Invalid note data');
+        }
+
         document.getElementById('noteDisplay').textContent = data.content;
         
         if (data.expiryTime) {
-            const timerInterval = updateExpiryTime(data.expiryTime);
+            const timerInterval = updateExpiryTime(data.expiryTime, 'viewExpiryTime');
             // Clean up interval when navigating away
             window.addEventListener('beforeunload', () => {
                 clearInterval(timerInterval);
@@ -187,6 +195,7 @@ async function loadNote(noteId) {
     } catch (error) {
         console.error('Error loading note:', error);
         document.getElementById('noteDisplay').textContent = 'Note not found or has expired.';
+        document.getElementById('viewExpiryTime').textContent = '';
     }
 }
 
