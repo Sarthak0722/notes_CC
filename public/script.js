@@ -54,22 +54,37 @@ async function getNote(gistId) {
 
 // Utility function to format time remaining
 function formatTimeRemaining(expiryTime) {
-    const now = new Date().getTime();
-    const expiry = new Date(expiryTime).getTime();
-    const timeLeft = expiry - now;
+    if (!expiryTime) return "Invalid expiry time";
+    
+    try {
+        const now = new Date().getTime();
+        const expiry = new Date(expiryTime).getTime();
+        
+        if (isNaN(expiry)) {
+            console.error("Invalid expiry time format:", expiryTime);
+            return "Invalid expiry time";
+        }
+        
+        const timeLeft = expiry - now;
 
-    if (timeLeft <= 0) {
-        return "Expired";
+        if (timeLeft <= 0) {
+            return "Expired";
+        }
+
+        const minutes = Math.floor(timeLeft / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+        return `${minutes}m ${seconds}s`;
+    } catch (error) {
+        console.error("Error formatting time:", error);
+        return "Error calculating time";
     }
-
-    const minutes = Math.floor(timeLeft / (1000 * 60));
-    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-    return `${minutes}m ${seconds}s`;
 }
 
 // Update expiry time display
 function updateExpiryTime(expiryTime) {
+    if (!expiryTime) return;
+    
     const expiryElement = document.getElementById('expiryTime');
     if (!expiryElement) return;
 
@@ -85,6 +100,7 @@ function updateExpiryTime(expiryTime) {
 
     updateTimer();
     const timerInterval = setInterval(updateTimer, 1000);
+    return timerInterval;
 }
 
 // Share note function
@@ -109,12 +125,21 @@ async function shareNote() {
         }
 
         const data = await response.json();
+        if (!data || !data.id) {
+            throw new Error('Invalid server response');
+        }
+
         const shareLink = `${window.location.origin}/note/${data.id}`;
         
         document.getElementById('shareLink').value = shareLink;
         document.getElementById('linkContainer').style.display = 'flex';
-        document.getElementById('expiryTime').textContent = `Time remaining: ${formatTimeRemaining(data.expiryTime)}`;
-        updateExpiryTime(data.expiryTime);
+        
+        if (data.expiryTime) {
+            updateExpiryTime(data.expiryTime);
+        } else {
+            console.error("No expiry time in response:", data);
+            document.getElementById('expiryTime').textContent = "Expiry time not available";
+        }
         
     } catch (error) {
         console.error('Error sharing note:', error);
@@ -153,7 +178,11 @@ async function loadNote(noteId) {
         document.getElementById('noteDisplay').textContent = data.content;
         
         if (data.expiryTime) {
-            updateExpiryTime(data.expiryTime);
+            const timerInterval = updateExpiryTime(data.expiryTime);
+            // Clean up interval when navigating away
+            window.addEventListener('beforeunload', () => {
+                clearInterval(timerInterval);
+            });
         }
     } catch (error) {
         console.error('Error loading note:', error);
