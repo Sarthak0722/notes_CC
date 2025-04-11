@@ -125,6 +125,9 @@ async function shareNote() {
         // Update expiry time
         updateExpiryTime('shareExpiry', data.expiresAt);
 
+        // Update URL without reloading
+        history.pushState({}, '', `/note/${data.id}`);
+
         // Reset button state
         shareButton.textContent = originalText;
         shareButton.disabled = false;
@@ -167,6 +170,7 @@ async function loadNote(noteId) {
         document.getElementById('noteDisplay').textContent = 'Loading note...';
         document.getElementById('viewNote').style.display = 'block';
         document.getElementById('editorView').style.display = 'none';
+        document.getElementById('shareView').style.display = 'none';
 
         const response = await fetch(`/api/notes/${noteId}`);
         if (!response.ok) {
@@ -191,5 +195,10 @@ window.onload = () => {
     
     if (noteMatch) {
         loadNote(noteMatch[1]);
+    } else {
+        // Show editor view for the main page
+        document.getElementById('editorView').style.display = 'block';
+        document.getElementById('shareView').style.display = 'none';
+        document.getElementById('viewNote').style.display = 'none';
     }
 }; 
