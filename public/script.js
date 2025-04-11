@@ -1,6 +1,6 @@
 // JSONBin.io configuration
-const JSONBIN_API_KEY = '$2a$10$Nt/Iq5o.wAfiJaVw5qJXAOPn6/p9zHtAt8mBhzqJVJGkypQvHxcie'; // Read-access API key
-const BIN_ID = '65f0c2a8dc74654018a8b8b4';
+const JSONBIN_API_KEY = '$2b$10$Nt/Iq5o.wAfiJaVw5qJXAOPn6/p9zHtAt8mBhzqJVJGkypQvHxcie'; // Read-access API key
+const BIN_ID = '65f0c9c8dc74654018a8ba7b';
 
 // Function to generate a random ID
 function generateId() {
@@ -14,13 +14,18 @@ async function saveNote(noteId, content) {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_API_KEY,
+                'X-Access-Key': JSONBIN_API_KEY,
             },
             body: JSON.stringify({
                 [noteId]: content
             })
         });
-        return response.ok;
+        
+        if (!response.ok) {
+            console.error('Server response:', await response.text());
+            return false;
+        }
+        return true;
     } catch (error) {
         console.error('Error saving note:', error);
         return false;
@@ -32,9 +37,15 @@ async function getNote(noteId) {
     try {
         const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
             headers: {
-                'X-Master-Key': JSONBIN_API_KEY
+                'X-Access-Key': JSONBIN_API_KEY
             }
         });
+        
+        if (!response.ok) {
+            console.error('Server response:', await response.text());
+            return null;
+        }
+        
         const data = await response.json();
         return data.record[noteId];
     } catch (error) {
